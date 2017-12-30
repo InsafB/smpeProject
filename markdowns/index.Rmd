@@ -8,7 +8,26 @@ output: html_document
 ## Cleaning the datasets
 
 ```{r}
-# Columns to keep
-keeps <- c("id","name","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy")
+library(plyr)
+library(doParallel)
+
+# Register parallel backend in order to load files in parallel
+nodes <- detectCores()
+cl <- makeCluster(nodes)
+registerDoParallel(cl)
+
+cities_data=ldply(list.files(path="../dataset/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
+  # Columns to keep
+    keeps <- c("id","name","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy")
+    city_data=read.csv(filename)
+    city_data <- city_data[keeps]
+    return(city_data)
+})
+
+full_data <- do.call("rbind", cities_data)
+
+stopCluster(cl)
 ```
+
+
 
