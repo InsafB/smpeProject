@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ## Cleaning the datasets
-
 ```{r}
 library(plyr)
 library(doParallel)
@@ -16,17 +15,17 @@ nodes <- detectCores()
 cl <- makeCluster(nodes)
 registerDoParallel(cl)
 
-cities_data=ldply(list.files(path="../test-dataset/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
+cities_data = ldply(list.files(path = "../test-dataset/", pattern = "csv", full.names=TRUE), .parallel = TRUE, function(filename) {
   # Columns to keep
-    keeps <- c("id","name","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy")
-    city_data=read.csv(filename)
+    keeps <- c("id","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy","host_since","calendar_last_scraped")
+    city_data = read.csv(filename)
     city_data <- city_data[keeps]
     
     return(city_data)
 })
 
 # Convert host_response_rate from factors to numeric values
-cities_data$host_response_rate=as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
+cities_data$host_response_rate = as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
 
 # Convert price from factors to numeric values
 cities_data$price <- as.double(substring(gsub(",", "", as.character(cities_data$price)),2))
@@ -44,6 +43,39 @@ cities_data$extra_people <- as.double(substring(gsub(",", "", as.character(citie
 cities_data$extra_people[is.na(cities_data$extra_people)] <- 0
 
 stopCluster(cl)
+```
+
+## Incomes
+
+```{r}
+library(ggplot2)
+
+# Remove lines with NA values in the columns that we're interested in
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+cities_data <- completeFun(cities_data, c("price", "minimum_nights", "number_of_reviews", "host_since", "calendar_last_scraped"))
+
+# Calculate the income for each host per month
+cities_data$income <- cities_data$number_of_reviews*cities_data$minimum_nights*cities_data$price
+cities_data$duration <- abs(as.Date(as.character(cities_data$calendar_last_scraped), format = "%Y-%m-%d") -
+                        as.Date(as.character(cities_data$host_since), format = "%Y-%m-%d"))/30
+
+# TODO Show histograms only for some countries
+for (country in unique(cities_data$country_code)) {
+  country_data <- subset(cities_data, cities_data$country_code == country)
+  country_data <- setNames(
+    aggregate(
+    cbind(country_data$income, country_data$duration),
+    by = list(host_id = country_data$host_id),
+    FUN = function(x) sum(x))
+    , c("Host Identifier", "Income", "Duration"))
+  country_data$income_per_month = unlist(country_data['Income'])/unlist(country_data['Duration'])
+  print(ggplot(country_data, aes(x = income_per_month))
+        +geom_histogram(color = "darkblue", fill = "lightblue")
+        +labs(title = country, x = "Income per month", y = "Count"))
+}
 ```
 
 
