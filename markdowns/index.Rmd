@@ -73,10 +73,33 @@ for (country in unique(cities_data$country_code)) {
     , c("Host Identifier", "Income", "Duration"))
   country_data$income_per_month = unlist(country_data['Income'])/unlist(country_data['Duration'])
   print(ggplot(country_data, aes(x = income_per_month))
-        +geom_histogram(color = "darkblue", fill = "lightblue")
-        +labs(title = country, x = "Income per month", y = "Count"))
+        + geom_histogram(color = "darkblue", fill = "lightblue")
+        + labs(title = country, x = "Income per month", y = "Count"))
 }
 ```
+
+## Miscellaneous
+### Type of listings
+```{r}
+roomTypes <- table(cities_data$room_type)
+names <- names(roomTypes)
+values <- as.vector(roomTypes)
+percentages <- scales::percent(round(values/sum(values), 2))
+names_percentages <- sprintf("%s (%s)", names, percentages)
+
+pie <- ggplot(df, aes(x = "", y = values, fill = names_percentages))+
+  geom_bar(width = 1, stat = "identity")+
+  coord_polar("y", start = 0)+
+  scale_fill_brewer("Room Types", palette = "Dark2")+
+  ggtitle("Type of listings")+
+  ylab("")+
+  xlab("")+
+  labs(fill="")+
+  theme(axis.ticks = element_blank(), panel.grid = element_blank(), axis.text = element_blank())+
+  geom_text(aes(label = percentages), size = 5, position = position_stack(vjust = 0.5))
+pie
+```
+
 
 
 
