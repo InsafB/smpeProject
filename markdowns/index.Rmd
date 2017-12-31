@@ -2,21 +2,27 @@
 title: "SMPE Project"
 author: "Insaf Boukrouh & Othmane Nahyl"
 date: "30 décembre 2017"
-output: html_document
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 9
+    highlight: tango
 ---
-
 ## Cleaning the datasets
 
-```{r}
+```{r, message=F, warning=F}
 library(plyr)
 library(doParallel)
+library(ggplot2)
+library(grid)
+library(gridExtra)
 
 # Register parallel backend in order to load files in parallel
 nodes <- detectCores()
 cl <- makeCluster(nodes)
 registerDoParallel(cl)
 
-cities_data=ldply(list.files(path="../test-dataset/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
+cities_data=ldply(list.files(path="../usa-data/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
   # Columns to keep
     keeps <- c("id","name","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy")
     city_data=read.csv(filename)
@@ -27,6 +33,9 @@ cities_data=ldply(list.files(path="../test-dataset/",pattern="csv",full.names=TR
 
 # Convert host_response_rate from factors to numeric values
 cities_data$host_response_rate=as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
+
+# Convert host_acceptance_rate from factors to numeric values
+cities_data$host_acceptance_rate=as.numeric(gsub("%", "", as.character(cities_data$host_acceptance_rate)))/100
 
 # Convert price from factors to numeric values
 cities_data$price <- as.double(substring(gsub(",", "", as.character(cities_data$price)),2))
@@ -43,6 +52,41 @@ cities_data$cleaning_fee[is.na(cities_data$cleaning_fee)] <- 0
 cities_data$extra_people <- as.double(substring(gsub(",", "", as.character(cities_data$extra_people)),2))
 cities_data$extra_people[is.na(cities_data$extra_people)] <- 0
 
+summary(cities_data)
+
+ggplot(data = cities_data, aes(x = host_response_time, y = price,color=host_response_time)) + geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+ggplot(data = cities_data, aes(x = host_response_rate, y = price, color=host_response_rate)) + geom_point(size=0.1)
+
+ggplot(data = cities_data, aes(x = host_acceptance_rate, y = price, color=host_acceptance_rate)) +geom_point(size=0.1) 
+
+ggplot(data = cities_data, aes(x = host_total_listings_count, y = price, color=host_total_listings_count)) +geom_point(size=0.1) 
+
+ggplot(data = cities_data, aes(x = property_type, y = price,color=property_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(data = cities_data, aes(x = room_type, y = price,color=room_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(data = cities_data, aes(x = accommodates, y = price,color=accommodates)) +geom_jitter(position=position_jitter(0.3),size=0.1) 
+
+ggplot(data = cities_data, aes(x = bathrooms, y = price, color=bathrooms)) +geom_jitter(width = 0.1,height = 0.2,size=0.1) 
+
+ggplot(data = cities_data, aes(x = bedrooms, y = price,color=bedrooms)) +geom_jitter(position=position_jitter(0.3),size=0.1) 
+
+ggplot(data = cities_data, aes(x = beds, y = price,color=beds)) +geom_jitter(position=position_jitter(0.3),size=0.1)
+
+ggplot(data = cities_data, aes(x = bed_type, y = price,color=bed_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
+
+ggplot(data = cities_data, aes(x = square_feet, y = price,color=square_feet)) +geom_point(size=0.1)
+
+ggplot(data = cities_data, aes(x = minimum_nights, y = price,color=minimum_nights))  +geom_point(size=0.1)
+
+ggplot(data = cities_data, aes(x = maximum_nights, y = price,color=maximum_nights)) +geom_point(size=0.1)
+
+ggplot(data = cities_data, aes(x = instant_bookable, y = price,color=instant_bookable))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
+
+ggplot(data = cities_data, aes(x = cancellation_policy, y = price,color=cancellation_policy))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
+
+# grid.arrange(p1,p2, ncol = 1)
 stopCluster(cl)
 ```
 
