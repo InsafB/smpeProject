@@ -111,6 +111,20 @@ mydata <- table(cities_data$host_since)
 plot(names(mydata), as.vector(mydata), type = "l", xlab = "Time", ylab = "Number of new hosts")
 ```
 
+### Airbnb Prices
+```{r}
+prices_per_country <- aggregate(cbind(cities_data$price),
+                  by = list(country = cities_data$country_code),
+                  FUN = function(x) mean(x))
+ggplot(data = prices_per_country, aes(x = prices_per_country$country, y = prices_per_country$V1))+
+    geom_bar(stat = "identity", fill = "steelblue", width = 0.7)+
+    geom_text(aes(label = round(prices_per_country$V1, 2)), size=4)+
+    coord_flip()+
+    xlab("Country")+
+    ylab("Average Daily Price")+  
+    theme_minimal()
+```
+
 
 
 
