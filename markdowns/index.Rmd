@@ -16,15 +16,32 @@ nodes <- detectCores()
 cl <- makeCluster(nodes)
 registerDoParallel(cl)
 
-cities_data=ldply(list.files(path="../dataset/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
+cities_data=ldply(list.files(path="../test-dataset/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
   # Columns to keep
     keeps <- c("id","name","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy")
     city_data=read.csv(filename)
     city_data <- city_data[keeps]
+    
     return(city_data)
 })
 
-full_data <- do.call("rbind", cities_data)
+# Convert host_response_rate from factors to numeric values
+cities_data$host_response_rate=as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
+
+# Convert price from factors to numeric values
+cities_data$price <- as.double(substring(gsub(",", "", as.character(cities_data$price)),2))
+
+# Convert security_deposit from factors to numeric values
+cities_data$security_deposit <- as.double(substring(gsub(",", "", as.character(cities_data$security_deposit)),2))
+cities_data$security_deposit[is.na(cities_data$security_deposit)] <- 0
+
+# Convert cleaning_fee from factors to numeric values
+cities_data$cleaning_fee <- as.double(substring(gsub(",", "", as.character(cities_data$cleaning_fee)),2))
+cities_data$cleaning_fee[is.na(cities_data$cleaning_fee)] <- 0
+
+# Convert extra_people from factors to numeric values
+cities_data$extra_people <- as.double(substring(gsub(",", "", as.character(cities_data$extra_people)),2))
+cities_data$extra_people[is.na(cities_data$extra_people)] <- 0
 
 stopCluster(cl)
 ```
