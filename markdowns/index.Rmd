@@ -87,7 +87,8 @@ values <- as.vector(roomTypes)
 percentages <- scales::percent(round(values/sum(values), 2))
 names_percentages <- sprintf("%s (%s)", names, percentages)
 
-pie <- ggplot(df, aes(x = "", y = values, fill = names_percentages))+
+df <- data.frame(group = names,value = values)
+pie <- ggplot(df, aes(x = "", y = value, fill = names_percentages))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start = 0)+
   scale_fill_brewer("Room Types", palette = "Dark2")+
@@ -99,6 +100,18 @@ pie <- ggplot(df, aes(x = "", y = values, fill = names_percentages))+
   geom_text(aes(label = percentages), size = 5, position = position_stack(vjust = 0.5))
 pie
 ```
+
+### Evolution of new hosts over time
+```{r}
+cities_data <- completeFun(cities_data, c("host_since"))
+cities_data$host_since <- as.Date(cities_data$host_since, '%Y-%m-%d')
+cities_data <- cities_data[order(as.Date(cities_data$host_since, format="%Y-%m-%d")),]
+cities_data$host_since <- format(as.Date(cities_data$host_since, "%Y-%m-%d"), format="%Y")
+mydata <- table(cities_data$host_since)
+plot(names(mydata), as.vector(mydata), type = "l", xlab = "Time", ylab = "Number of new hosts")
+```
+
+
 
 
 
