@@ -9,7 +9,6 @@ output:
     highlight: tango
 ---
 ## Loading and cleaning the datasets
-
 ```{r, message=F, warning=F, cache=T}
 library(plyr)
 library(doParallel)
@@ -29,7 +28,7 @@ cl <- makeCluster(nodes)
 registerDoParallel(cl)
 
 # Load the csv files and keep certain columns
-cities_data = ldply(list.files(path="../spain-data/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
+cities_data = ldply(list.files(path="../usa-data/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
   # Columns to keep
     keeps <- c("id","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy","host_since","calendar_last_scraped","city","state")
     city_data = read.csv(filename)
@@ -42,7 +41,6 @@ stopCluster(cl)
 ```
 
 ## Cleaning the datasets
-
 ```{r, message=F, warning=F, cache=T}
 # Convert host_response_rate from factors to numeric values
 cities_data$host_response_rate <- as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
@@ -72,14 +70,11 @@ summary(cities_data)
 ```
 
 ## Price plots according to different parameters
-
 ```{r, message=F, warning=F, cache=T}
 cities_data_without_null_host_response_time <-subset(cities_data,host_response_time != "N/A" & host_response_time != "")
 ggplot(data = cities_data_without_null_host_response_time, aes(x = host_response_time, y = price,color=host_response_time)) + geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
 
 ggplot(data = cities_data, aes(x = host_response_rate, y = price, color=host_response_rate)) + geom_point(size=0.1)
-
-ggplot(data = cities_data, aes(x = host_acceptance_rate, y = price, color=host_acceptance_rate)) +geom_point(size=0.1) 
 
 ggplot(data = cities_data, aes(x = host_total_listings_count, y = price, color=host_total_listings_count)) +geom_point(size=0.1) 
 
@@ -108,7 +103,16 @@ ggplot(data = cities_data, aes(x = instant_bookable, y = price,color=instant_boo
 
 ggplot(data = cities_data, aes(x = cancellation_policy, y = price,color=cancellation_policy))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
+The plots show no correlations between the price and the majority of the parameters: the host response time, the host response rate, the host total listings count, the number of accommodates, the number of bathrooms, the number of bedrooms, the number of beds, the number of minimum and maximum nights (most of the listings don't have restrictions about these two parameters), whether the listing is instant bookable or not, and the cancellation policy (we can only see that the prices are slightly more expensive for the listings that have a strict cancellation policy).
 
+For the square_feet, the great majority of the listings don't have this information. Thus, we can't conclude anything regarding it.
+
+There are possible correlations between the price and:
+- The property type: the prices are very expensive for some types like the earth houses and the tree houses.
+- The room type: the entire homes are generally more expensive than the other types, and the shared rooms are the cheapest ones.
+- The bed type: beds other than real ones are generally cheaper, but we have a big variability for the real beds.
+
+In terms of variability, it's high for most of the boxplots. We also see that most of them are skewed towards the bottom, which indicates that the higher the prices are, the more spread out they are.
 
 ## Miscellaneous
 ```{r}
@@ -118,6 +122,7 @@ completeFun <- function(data, desiredCols) {
   return(data[completeVec, ])
 }
 
+# function: removing spaces
 trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 ```
 
@@ -144,11 +149,12 @@ incomes_data$income_per_month = unlist(incomes_data['V1'])/unlist(incomes_data['
 
 # Plot
 ggplot(incomes_data, aes(x = income_per_month))+
-  geom_histogram(color = "darkblue", fill = "lightblue", binwidth = 1000)+
-  labs(title = "Incomes in the USA", x = "Income per month", y = "Count")
-
-# TODO: print a more accurate histogram (with limited values)
+  geom_histogram(color = "darkblue", fill = "lightblue", binwidth = 10)+
+  labs(title = "Incomes in the USA", x = "Income per month", y = "Count")+
+  coord_cartesian(xlim=c(0,500))
 ```
+While a lot of people gain big amounts of money through AirBnB, most of them have an average income per month lower than 100 dollars.
+
 
 ### Type of listings
 ```{r, message=F, warning=F, cache=T}
@@ -173,24 +179,24 @@ pie <- ggplot(room_types_counts_df, aes(x = "", y = value, fill = room_types_per
   geom_text(aes(label = percentages), size = 5, position = position_stack(vjust = 0.5))
 pie
 ```
+Most of the listings are entire homes or appartments, while the shared rooms don't represent more than 3% of the entire listings.
 
 ### Evolution of new hosts over time
 ```{r, message=F, warning=F, cache=T}
 # Clean
 new_hosts_data <- completeFun(cities_data, c("host_since"))
 
-# Calculate the number of new hosts for each year
+# Calculate the number of new hosts for each year (except for 2017)
 new_hosts_data$host_since <- as.Date(new_hosts_data$host_since, '%Y-%m-%d')
+new_hosts_data <- new_hosts_data[new_hosts_data$host_since < as.Date("2017-01-01"),]
 new_hosts_data <- new_hosts_data[order(as.Date(new_hosts_data$host_since, format="%Y-%m-%d")),]
-new_hosts_data$host_since <- format(as.Date(new_hosts_data$host_since, "%Y-%m-%d"), format="%Y")
+new_hosts_data$host_since <- format(as.Date(new_hosts_data$host_since, "%Y-%m-%d"), format="%Y-%m")
 new_hosts_data_table <- table(new_hosts_data$host_since)
 
 # Plot
-plot(names(new_hosts_data_table ), as.vector(new_hosts_data_table), type = "l", xlab = "Time", ylab = "Number of new hosts")
-
-# TODO Try to plot this by month
-# TODO Remove 2017 data since they are not complete
+plot(as.Date(paste(format(names(new_hosts_data_table), format="%Y-%m"),"-01", sep="")), as.vector(new_hosts_data_table), type = "l", xlab = "Time", ylab = "Number of new hosts")
 ```
+The number of new hosts was increasing since 2008. However, there was a decrease of this number in the last two years.
 
 ### Airbnb Prices
 ```{r, message=F, warning=F, cache=T}
@@ -209,20 +215,35 @@ prices_per_state$state[prices_per_state$state == 'il'] <- 'IL'
 prices_per_state$state[prices_per_state$state == 'Il'] <- 'IL'
 
 # Calculate the average price per city
-prices_per_state <- aggregate(cbind(prices_per_state$price),
+average_prices_per_state <- aggregate(cbind(prices_per_state$price),
                   by = list(state = prices_per_state$state),
                   FUN = function(x) mean(x))
 
 # Plot
-ggplot(data = prices_per_state, aes(x = prices_per_state$state, y = prices_per_state$V1))+
+ggplot(data = average_prices_per_state, aes(x = average_prices_per_state$state, y = average_prices_per_state$V1))+
     geom_bar(stat = "identity", fill = "steelblue", width = 0.7)+
-    geom_text(aes(label = round(prices_per_state$V1, 2)), size=4)+
+    geom_text(aes(label = round(average_prices_per_state$V1, 2)), size=4)+
     coord_flip()+
     xlab("State")+
     ylab("Average Daily Price")+  
     theme_minimal()
-
 ```
+The average daily price of listings in the state of Vermont is very high (650 dollars), while it's the lowest in Northern Mariana Islands (90 dollars). However, we can't conclude anything from the plot since the average prices alone aren't representative of the whole prices in every state.
+
+To make a conclusion, we have to analyze the variability of the prices.
+
+```{r}
+ggplot(data = prices_per_state, aes(x = state, y = price, color = state)) + geom_boxplot() + geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+The plot shows that we have a high variability of the prices in the majority of the states. In Vermont and the Northern Mariana Islands, the boxplots are almost flat. 
+
+```{r}
+vt_data = prices_per_state[prices_per_state$state == 'VT',]
+nrow(vt_data)
+mp_data = prices_per_state[prices_per_state$state == 'MP',]
+nrow(mp_data)
+```
+Indeed, we have only one record from each of these two states. Thus, the plot of average daily prices was misleading.
 
 ### Overall score regression
 ```{r, message=F, warning=F, cache=T}
@@ -271,6 +292,8 @@ summary(anv)
 # Linear regression with only the significant variables
 reg <- lm(data=my_data, price~host_total_listings_count+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+security_deposit+extra_people+zipcode+square_feet)
 summary(reg)
+
+plot(reg)
 
 # TODO: some other model
 
