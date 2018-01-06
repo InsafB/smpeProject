@@ -4,18 +4,24 @@ author: "Insaf Boukrouh & Othmane Nahyl"
 date: "30 décembre 2017"
 output: 
   html_document: 
-    fig_height: 7
-    fig_width: 9
+    fig_height: 10
+    fig_width: 10
     highlight: tango
 ---
-
 ## Loading and cleaning the datasets
-```{r, message=F, warning=F}
+
+```{r, message=F, warning=F, cache=T}
 library(plyr)
 library(doParallel)
 library(ggplot2)
 library(grid)
 library(gridExtra)
+
+# Remove lines with NA values in the columns that we're interested in
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
 
 # Register parallel backend in order to load files in parallel
 nodes <- detectCores()
@@ -23,7 +29,7 @@ cl <- makeCluster(nodes)
 registerDoParallel(cl)
 
 # Load the csv files and keep certain columns
-cities_data=ldply(list.files(path="../spain-data/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
+cities_data = ldply(list.files(path="../spain-data/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
   # Columns to keep
     keeps <- c("id","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy","host_since","calendar_last_scraped","city","state")
     city_data = read.csv(filename)
@@ -33,12 +39,16 @@ cities_data=ldply(list.files(path="../spain-data/",pattern="csv",full.names=TRUE
 })
 
 stopCluster(cl)
+```
 
+## Cleaning the datasets
+
+```{r, message=F, warning=F, cache=T}
 # Convert host_response_rate from factors to numeric values
-cities_data$host_response_rate = as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
+cities_data$host_response_rate <- as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
 
 # Convert host_acceptance_rate from factors to numeric values
-cities_data$host_acceptance_rate=as.numeric(gsub("%", "", as.character(cities_data$host_acceptance_rate)))/100
+cities_data$host_acceptance_rate <- as.numeric(gsub("%", "", as.character(cities_data$host_acceptance_rate)))/100
 
 # Convert price from factors to numeric values
 cities_data$price <- as.double(substring(gsub(",", "", as.character(cities_data$price)),2))
@@ -59,8 +69,13 @@ cities_data$extra_people[is.na(cities_data$extra_people)] <- 0
 ## Different plots
 ```{r, message=F, warning=F}
 summary(cities_data)
+```
 
-ggplot(data = cities_data, aes(x = host_response_time, y = price,color=host_response_time)) + geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+## Price plots according to different parameters
+
+```{r, message=F, warning=F, cache=T}
+cities_data_without_null_host_response_time <-subset(cities_data,host_response_time != "N/A" & host_response_time != "")
+ggplot(data = cities_data_without_null_host_response_time, aes(x = host_response_time, y = price,color=host_response_time)) + geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
 
 ggplot(data = cities_data, aes(x = host_response_rate, y = price, color=host_response_rate)) + geom_point(size=0.1)
 
@@ -68,7 +83,8 @@ ggplot(data = cities_data, aes(x = host_acceptance_rate, y = price, color=host_a
 
 ggplot(data = cities_data, aes(x = host_total_listings_count, y = price, color=host_total_listings_count)) +geom_point(size=0.1) 
 
-ggplot(data = cities_data, aes(x = property_type, y = price,color=property_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+cities_data_without_null_property_type <-subset(cities_data,property_type != "N/A" & property_type != "")
+ggplot(data = cities_data_without_null_property_type, aes(x = property_type, y = price,color=property_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ggplot(data = cities_data, aes(x = room_type, y = price,color=room_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
@@ -90,9 +106,7 @@ ggplot(data = cities_data, aes(x = maximum_nights, y = price,color=maximum_night
 
 ggplot(data = cities_data, aes(x = instant_bookable, y = price,color=instant_bookable))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
 
-ggplot(data = cities_data, aes(x = cancellation_policy, y = price,color=cancellation_policy))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
-
-# grid.arrange(p1,p2, ncol = 1)
+ggplot(data = cities_data, aes(x = cancellation_policy, y = price,color=cancellation_policy))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
@@ -108,7 +122,7 @@ trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 ```
 
 ### Incomes
-```{r}
+```{r, message=F, warning=F, cache=T}
 # Clean
 incomes_data <- completeFun(cities_data, c("price", "minimum_nights", "number_of_reviews", "host_since", "calendar_last_scraped"))
 
@@ -137,7 +151,7 @@ ggplot(incomes_data, aes(x = income_per_month))+
 ```
 
 ### Type of listings
-```{r}
+```{r, message=F, warning=F, cache=T}
 # Get the room types and their percentages
 room_types_counts <- table(cities_data$room_type)
 room_types <- names(room_types_counts)
@@ -161,7 +175,7 @@ pie
 ```
 
 ### Evolution of new hosts over time
-```{r}
+```{r, message=F, warning=F, cache=T}
 # Clean
 new_hosts_data <- completeFun(cities_data, c("host_since"))
 
@@ -179,7 +193,7 @@ plot(names(new_hosts_data_table ), as.vector(new_hosts_data_table), type = "l", 
 ```
 
 ### Airbnb Prices
-```{r}
+```{r, message=F, warning=F, cache=T}
 # Clean
 prices_per_state <- completeFun(cities_data, c("price","state"))
 prices_per_state$state <- trim(prices_per_state$state)
@@ -207,12 +221,37 @@ ggplot(data = prices_per_state, aes(x = prices_per_state$state, y = prices_per_s
     xlab("State")+
     ylab("Average Daily Price")+  
     theme_minimal()
+
+```
+
+### Overall score regression
+```{r, message=F, warning=F, cache=T}
+ggplot(data = cities_data, aes(x = review_scores_accuracy, y = review_scores_rating,color=review_scores_accuracy)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+
+ggplot(data = cities_data, aes(x = review_scores_cleanliness, y = review_scores_rating,color=review_scores_cleanliness)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+
+ggplot(data = cities_data, aes(x = review_scores_checkin, y = review_scores_rating,color=review_scores_checkin)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+
+ggplot(data = cities_data, aes(x = review_scores_communication, y = review_scores_rating,color=review_scores_communication)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+
+ggplot(data = cities_data, aes(x = review_scores_location, y = review_scores_rating,color=review_scores_location)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+```
+
+
+```{r, message=F, warning=F, cache=T}
+reg <- lm(data=cities_data,log(review_scores_rating)~(review_scores_accuracy+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+I(review_scores_accuracy^2)+I(review_scores_cleanliness^2)+I(review_scores_checkin^2)+I(review_scores_communication^2)+I(review_scores_location^2)))
+summary(reg)
+```
+
+```{r, message=F, warning=F, cache=T}
+par(mfrow=c(2,2));
+plot(reg);
+par(mfrow=c(1,1))
 ```
 
 
 
-
-# Linear regression
+# Price linear regression
 ```{r}
 # Candidates explanatory variables
 variables <- c("host_response_time","host_total_listings_count","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","instant_bookable","cancellation_policy","zipcode")
