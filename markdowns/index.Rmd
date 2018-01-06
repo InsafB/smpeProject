@@ -245,32 +245,50 @@ nrow(mp_data)
 ```
 Indeed, we have only one record from each of these two states. Thus, the plot of average daily prices was misleading.
 
-### Overall score regression
+### Regression to explain the Ratings
 ```{r, message=F, warning=F, cache=T}
-ggplot(data = cities_data, aes(x = review_scores_accuracy, y = review_scores_rating,color=review_scores_accuracy)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+scores <- c("review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value")
+scores_data <- cities_data[scores]
+scores_data <- completeFun(scores_data, scores)
 
-ggplot(data = cities_data, aes(x = review_scores_cleanliness, y = review_scores_rating,color=review_scores_cleanliness)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+ggplot(data = scores_data, aes(x = review_scores_accuracy, y = review_scores_rating, color=review_scores_accuracy)) + geom_jitter(size = 0.1)
 
-ggplot(data = cities_data, aes(x = review_scores_checkin, y = review_scores_rating,color=review_scores_checkin)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+ggplot(data = scores_data, aes(x = review_scores_cleanliness, y = review_scores_rating, color=review_scores_cleanliness)) + geom_jitter(size = 0.1)
 
-ggplot(data = cities_data, aes(x = review_scores_communication, y = review_scores_rating,color=review_scores_communication)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+ggplot(data = scores_data, aes(x = review_scores_checkin, y = review_scores_rating, color=review_scores_checkin)) + geom_jitter(size = 0.1)
 
-ggplot(data = cities_data, aes(x = review_scores_location, y = review_scores_rating,color=review_scores_location)) + geom_jitter(size=0.1) + stat_smooth(method = "lm", col = "red")
+ggplot(data = scores_data, aes(x = review_scores_communication, y = review_scores_rating, color=review_scores_communication)) + geom_jitter(size = 0.1)
+
+ggplot(data = scores_data, aes(x = review_scores_location, y = review_scores_rating, color=review_scores_location)) + geom_jitter(size = 0.1)
+
+ggplot(data = scores_data, aes(x = review_scores_value, y = review_scores_rating, color=review_scores_value)) + geom_jitter(size = 0.1)
+```
+From the plots, we can see that most of the people who give the listings high ratings, give high scores for all the other types of scores. However, this is not enough to assume the existence of correlations between the global and the specific scores.
+
+## Trying to fit a linear model to explain the Ratings
+```{r, message=F, warning=F, cache=T}
+# Linear model with all variables
+r_reg1 <- lm(data=cities_data, review_scores_rating~review_scores_accuracy+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value)
+summary(r_reg1)
 ```
 
+## Analysis of the results
+Our model has:
+- A fairly good Adjusted R-squared value.
+- A low residual standard error.
+- Small standard errors of the coefficients of explanatory variables.
 
-```{r, message=F, warning=F, cache=T}
-reg <- lm(data=cities_data,log(review_scores_rating)~(review_scores_accuracy+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+I(review_scores_accuracy^2)+I(review_scores_cleanliness^2)+I(review_scores_checkin^2)+I(review_scores_communication^2)+I(review_scores_location^2)))
-summary(reg)
+However, this is not enough to say that our linear model is good. To make sure of that, let's check whether the linear regression hypothesis hold or not.
+
+```{r}
+plot(r_reg1)
 ```
+- The "Residuals vs Fitted" plot indicates if residuals have non-linear patterns. If the residuals are spread out around a horizontal line without distinct patterns, that means that we don't have non-linear relationships, which is not the case for our model since it seems that the residuals have some kind of structure.
+- The "Normal Q-Q" plot shows if residuals are normally distributed. Our residuals are not well lined on the straight dashed line except in the middle of the plot, which is not quite good.
+- The "Scale-Location" plot lets us check the assumption of equal variance (homoscedasticity). Our line is not horizontal with randomly spread points, thus, our residuals are not homoscedastic.
+- The "Residuals vs Leverage" plot helps us find influential cases. In fact, even though data has outliers, they might not be influential to determine a regression line. In our plot, we can barely see Cook's distance lines because all cases are well inside of them. i.e: if we exclude the "52474" case for example, the changes in the slope coefficients won't be important.
 
-```{r, message=F, warning=F, cache=T}
-par(mfrow=c(2,2));
-plot(reg);
-par(mfrow=c(1,1))
-```
-
-
+To conclude, our linear model doesn't well explain the ratings.
 
 # Price linear regression
 ```{r}
