@@ -23,7 +23,7 @@ cl <- makeCluster(nodes)
 registerDoParallel(cl)
 
 # Load the csv files and keep certain columns
-cities_data=ldply(list.files(path="../usa-data/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
+cities_data=ldply(list.files(path="../spain-data/",pattern="csv",full.names=TRUE),.parallel = TRUE,function(filename) {
   # Columns to keep
     keeps <- c("id","host_id","host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","country_code","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value","instant_bookable","cancellation_policy","host_since","calendar_last_scraped","city","state")
     city_data = read.csv(filename)
@@ -31,6 +31,8 @@ cities_data=ldply(list.files(path="../usa-data/",pattern="csv",full.names=TRUE),
     
     return(city_data)
 })
+
+stopCluster(cl)
 
 # Convert host_response_rate from factors to numeric values
 cities_data$host_response_rate = as.numeric(gsub("%", "", as.character(cities_data$host_response_rate)))/100
@@ -52,7 +54,10 @@ cities_data$cleaning_fee[is.na(cities_data$cleaning_fee)] <- 0
 # Convert extra_people from factors to numeric values
 cities_data$extra_people <- as.double(substring(gsub(",", "", as.character(cities_data$extra_people)),2))
 cities_data$extra_people[is.na(cities_data$extra_people)] <- 0
+```
 
+## Different plots
+```{r, message=F, warning=F}
 summary(cities_data)
 
 ggplot(data = cities_data, aes(x = host_response_time, y = price,color=host_response_time)) + geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
@@ -88,8 +93,8 @@ ggplot(data = cities_data, aes(x = instant_bookable, y = price,color=instant_boo
 ggplot(data = cities_data, aes(x = cancellation_policy, y = price,color=cancellation_policy))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
 
 # grid.arrange(p1,p2, ncol = 1)
-stopCluster(cl)
 ```
+
 
 ## Miscellaneous
 ```{r}
@@ -98,6 +103,8 @@ completeFun <- function(data, desiredCols) {
   completeVec <- complete.cases(data[, desiredCols])
   return(data[completeVec, ])
 }
+
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 ```
 
 ### Incomes
@@ -136,7 +143,7 @@ room_types_counts <- table(cities_data$room_type)
 room_types <- names(room_types_counts)
 counts <- as.vector(room_types_counts)
 percentages <- scales::percent(round(counts/sum(counts), 2))
-room_types_percentages <- sprintf("%s (%s)", names, percentages)
+room_types_percentages <- sprintf("%s (%s)", room_types, percentages)
 room_types_counts_df <- data.frame(group = room_types, value = counts)
 
 # Plot
@@ -173,10 +180,8 @@ plot(names(new_hosts_data_table ), as.vector(new_hosts_data_table), type = "l", 
 
 ### Airbnb Prices
 ```{r}
-trim <- function (x) gsub("^\\s+|\\s+$", "", x)
-
 # Clean
-prices_per_state <- completeFun(cities_data, c("price", "state"))
+prices_per_state <- completeFun(cities_data, c("price","state"))
 prices_per_state$state <- trim(prices_per_state$state)
 prices_per_state <- subset(prices_per_state, prices_per_state$state != '')
 prices_per_state$state[prices_per_state$state == 'New York'] <- 'NY'
@@ -204,6 +209,35 @@ ggplot(data = prices_per_state, aes(x = prices_per_state$state, y = prices_per_s
     theme_minimal()
 ```
 
+
+
+
+# Linear regression
+```{r}
+# Candidates explanatory variables
+variables <- c("host_response_time","host_total_listings_count","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","instant_bookable","cancellation_policy","zipcode")
+
+# Clean the data
+my_data <- completeFun(cities_data, variables)
+nrow(my_data)
+
+# Linear regression with all the variables
+reg <- lm(data=my_data, price~host_response_time+host_total_listings_count+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy+zipcode+square_feet)
+summary(reg)
+
+# Try ANOVA with all variables
+anv <- aov(data=my_data, price~host_response_time+host_total_listings_count+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy+zipcode+square_feet)
+summary(anv)
+
+# Linear regression with only the significant variables
+reg <- lm(data=my_data, price~host_total_listings_count+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+security_deposit+extra_people+zipcode+square_feet)
+summary(reg)
+
+# TODO: some other model
+
+# Keep only two digits from the zipcode
+# my_data$zipcode = as.numeric(substring(my_data$zipcode,1,2))
+```
 
 
 
