@@ -245,7 +245,7 @@ nrow(mp_data)
 ```
 Indeed, we have only one record from each of these two states. Thus, the plot of average daily prices was misleading.
 
-### Regression to explain the Ratings
+# Regression to explain the Ratings
 ```{r, message=F, warning=F, cache=T}
 scores <- c("review_scores_rating","review_scores_accuracy","review_scores_cleanliness","review_scores_checkin","review_scores_communication","review_scores_location","review_scores_value")
 scores_data <- cities_data[scores]
@@ -265,18 +265,20 @@ ggplot(data = scores_data, aes(x = review_scores_value, y = review_scores_rating
 ```
 From the plots, we can see that most of the people who give the listings high ratings, give high scores for all the other types of scores. However, this is not enough to assume the existence of correlations between the global and the specific scores.
 
-## Trying to fit a linear model to explain the Ratings
+### Trying to fit a linear model to explain the Ratings
 ```{r, message=F, warning=F, cache=T}
 # Linear model with all variables
 r_reg1 <- lm(data=cities_data, review_scores_rating~review_scores_accuracy+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value)
 summary(r_reg1)
 ```
-
-## Analysis of the results
 Our model has:
+
 - A fairly good Adjusted R-squared value.
+
 - A low residual standard error.
+
 - Small standard errors of the coefficients of explanatory variables.
+
 
 However, this is not enough to say that our linear model is good. To make sure of that, let's check whether the linear regression hypothesis hold or not.
 
@@ -284,42 +286,85 @@ However, this is not enough to say that our linear model is good. To make sure o
 plot(r_reg1)
 ```
 - The "Residuals vs Fitted" plot indicates if residuals have non-linear patterns. If the residuals are spread out around a horizontal line without distinct patterns, that means that we don't have non-linear relationships, which is not the case for our model since it seems that the residuals have some kind of structure.
+
 - The "Normal Q-Q" plot shows if residuals are normally distributed. Our residuals are not well lined on the straight dashed line except in the middle of the plot, which is not quite good.
+
 - The "Scale-Location" plot lets us check the assumption of equal variance (homoscedasticity). Our line is not horizontal with randomly spread points, thus, our residuals are not homoscedastic.
+
 - The "Residuals vs Leverage" plot helps us find influential cases. In fact, even though data has outliers, they might not be influential to determine a regression line. In our plot, we can barely see Cook's distance lines because all cases are well inside of them. i.e: if we exclude the "52474" case for example, the changes in the slope coefficients won't be important.
+
 
 To conclude, our linear model doesn't well explain the ratings.
 
-# Price linear regression
+# Regression to explain the Price
 ```{r}
 # Candidates explanatory variables
-variables <- c("host_response_time","host_total_listings_count","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","instant_bookable","cancellation_policy","zipcode")
+variables <- c("host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","instant_bookable","cancellation_policy")
 
 # Clean the data
-my_data <- completeFun(cities_data, variables)
-nrow(my_data)
-
-# Linear regression with all the variables
-reg <- lm(data=my_data, price~host_response_time+host_total_listings_count+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy+zipcode+square_feet)
-summary(reg)
-
-# Try ANOVA with all variables
-anv <- aov(data=my_data, price~host_response_time+host_total_listings_count+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy+zipcode+square_feet)
-summary(anv)
-
-# Linear regression with only the significant variables
-reg <- lm(data=my_data, price~host_total_listings_count+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+security_deposit+extra_people+zipcode+square_feet)
-summary(reg)
-
-plot(reg)
-
-# TODO: some other model
-
-# Keep only two digits from the zipcode
-# my_data$zipcode = as.numeric(substring(my_data$zipcode,1,2))
+my_data <- cities_data
+# my_data <- completeFun(cities_data, variables)
+my_data$state <- trim(my_data$state)
+my_data <- subset(my_data, my_data$state != '')
+my_data$state[my_data$state == 'New York'] <- 'NY'
+my_data$state[my_data$state == 'ny'] <- 'NY'
+my_data$state[my_data$state == 'Baja California'] <- 'CA'
+my_data$state[my_data$state == 'secc Terrazas'] <- 'CA'
+my_data$state[my_data$state == 'ca'] <- 'CA'
+my_data$state[my_data$state == 'Ca'] <- 'CA'
+my_data$state[my_data$state == 'wa'] <- 'WA'
+my_data$state[my_data$state == 'il'] <- 'IL'
+my_data$state[my_data$state == 'Il'] <- 'IL'
 ```
 
+### Trying to fit a linear model to explain the Price
+```{r}
+p_reg1 <- lm(data=my_data, price~host_acceptance_rate+host_total_listings_count+zipcode+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy)
+summary(p_reg1)
+```
+For this model, we have:
+
+- A very good value of the adjusted R-squared.
+
+- A high value of the residual standard error.
+
+- Large standard errors for the model's coefficients.
 
 
+Thus, this model is not good to explain the price. This was actually expected since, as we have seen previously, most of the explanatory variables we have here don't seem to have relations with the price, expect for 4 that can be possibly correlated for the price.
 
+Let's see about that.
+
+### Trying to fit a linear model with the most correlated variables
+```{r}
+p_reg2 <- lm(data=my_data, price~property_type+room_type+bed_type+cancellation_policy)
+summary(p_reg2)
+```
+The model can't be worse. The adjusted R-squared is less than 0.1, the residual standard error is very high, and the model's coefficents's standard errors are very high as well.
+
+Our hypothesis doesn't stand then.
+
+Based on everyday's life, one can think that the price may be explained by the location, the square feet, and the number of bedrooms and bathrooms.
+
+Let's try to check this.
+
+### Trying to fit a linear model with some candidate variables
+```{r}
+# Linear regression with other variables
+p_reg3 <- lm(data=my_data, price~zipcode+bedrooms+bathrooms+square_feet)
+summary(p_reg3)
+```
+The Adjusted R-Squared is better than the previous model but is still very low, while the errors remain very high. 
+
+We can also see that 141937 of the observations were deleted due to some missing information (very few of the listings have the square feet information), this, most probably, has a bad impact on our results.
+
+This model is not good then.
+
+We have tried many other linear models in order to explain the price, but all in vain. This may be because:
+
+- There is no linear model to explain our data.
+
+- Some information explaining the price could be missing (like the square feet for example).
+
+- There could be some linear models that explain specific ranges of the price but not all our data (for example, the price may depend on the number of bedrooms for small appartments but this number becomes irrelevant once we start speaking about villas).
 
