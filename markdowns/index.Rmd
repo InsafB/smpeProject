@@ -65,7 +65,7 @@ cities_data$extra_people[is.na(cities_data$extra_people)] <- 0
 ```
 
 ## Different plots
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, cache=T}
 summary(cities_data)
 ```
 
@@ -115,7 +115,7 @@ There are possible correlations between the price and:
 In terms of variability, it's high for most of the boxplots. We also see that most of them are skewed towards the bottom, which indicates that the higher the prices are, the more spread out they are.
 
 ## Miscellaneous
-```{r}
+```{r, message=F, warning=F, cache=T}
 # function: removing lines with NA values in specific columns
 completeFun <- function(data, desiredCols) {
   completeVec <- complete.cases(data[, desiredCols])
@@ -232,12 +232,12 @@ The average daily price of listings in the state of Vermont is very high (650 do
 
 To make a conclusion, we have to analyze the variability of the prices.
 
-```{r}
+```{r, message=F, warning=F, cache=T}
 ggplot(data = prices_per_state, aes(x = state, y = price, color = state)) + geom_boxplot() + geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 The plot shows that we have a high variability of the prices in the majority of the states. In Vermont and the Northern Mariana Islands, the boxplots are almost flat. 
 
-```{r}
+```{r, message=F, warning=F, cache=T}
 vt_data = prices_per_state[prices_per_state$state == 'VT',]
 nrow(vt_data)
 mp_data = prices_per_state[prices_per_state$state == 'MP',]
@@ -282,7 +282,7 @@ Our model has:
 
 However, this is not enough to say that our linear model is good. To make sure of that, let's check whether the linear regression hypothesis hold or not.
 
-```{r}
+```{r, message=F, warning=F, cache=T}
 plot(r_reg1)
 ```
 - The "Residuals vs Fitted" plot indicates if residuals have non-linear patterns. If the residuals are spread out around a horizontal line without distinct patterns, that means that we don't have non-linear relationships, which is not the case for our model since it seems that the residuals have some kind of structure.
@@ -297,7 +297,7 @@ plot(r_reg1)
 To conclude, our linear model doesn't well explain the ratings.
 
 # Regression to explain the Price
-```{r}
+```{r, message=F, warning=F, cache=T}
 # Candidates explanatory variables
 variables <- c("host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","instant_bookable","cancellation_policy")
 
@@ -318,7 +318,7 @@ my_data$state[my_data$state == 'Il'] <- 'IL'
 ```
 
 ### Trying to fit a linear model to explain the Price
-```{r}
+```{r, message=F, warning=F, cache=T}
 p_reg1 <- lm(data=my_data, price~host_acceptance_rate+host_total_listings_count+zipcode+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy)
 summary(p_reg1)
 ```
@@ -336,7 +336,7 @@ Thus, this model is not good to explain the price. This was actually expected si
 Let's see about that.
 
 ### Trying to fit a linear model with the most correlated variables
-```{r}
+```{r, message=F, warning=F, cache=T}
 p_reg2 <- lm(data=my_data, price~property_type+room_type+bed_type+cancellation_policy)
 summary(p_reg2)
 ```
@@ -349,7 +349,7 @@ Based on everyday's life, one can think that the price may be explained by the l
 Let's try to check this.
 
 ### Trying to fit a linear model with some candidate variables
-```{r}
+```{r, message=F, warning=F, cache=T}
 # Linear regression with other variables
 p_reg3 <- lm(data=my_data, price~zipcode+bedrooms+bathrooms+square_feet)
 summary(p_reg3)
