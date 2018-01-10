@@ -182,7 +182,7 @@ The average daily price of listings in the state of Vermont is very high (650 do
 To make a conclusion, we have to analyze the variability of the prices.
 
 ```{r, message=F, warning=F, cache=T}
-ggplot(data = prices_per_state, aes(x = state, y = price, color = state)) + geom_boxplot() + geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(data = prices_per_state, aes(x = state, y = price, color = state)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))+coord_cartesian(ylim = c(0, 750))
 ```
 The plot shows that we have a high variability of the prices in the majority of the states. In Vermont and the Northern Mariana Islands, the boxplots are almost flat. 
 
@@ -203,16 +203,16 @@ summary(cities_data)
 ## Price plots according to different parameters
 ```{r, message=F, warning=F, cache=T}
 cities_data_without_null_host_response_time <-subset(cities_data,host_response_time != "N/A" & host_response_time != "")
-ggplot(data = cities_data_without_null_host_response_time, aes(x = host_response_time, y = price,color=host_response_time)) + geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggplot(data = cities_data_without_null_host_response_time, aes(x = host_response_time, y = price,color=host_response_time)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))+coord_cartesian(ylim = c(0, 500)) 
 
-ggplot(data = cities_data, aes(x = host_response_rate, y = price, color=host_response_rate)) + geom_point(size=0.1)
+ggplot(data = cities_data, aes(x = host_response_rate, y = price, color=host_response_rate)) +geom_point(size=0.1)
 
 ggplot(data = cities_data, aes(x = host_total_listings_count, y = price, color=host_total_listings_count)) +geom_point(size=0.1) 
 
 cities_data_without_null_property_type <-subset(cities_data,property_type != "N/A" & property_type != "")
-ggplot(data = cities_data_without_null_property_type, aes(x = property_type, y = price,color=property_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(data = cities_data_without_null_property_type, aes(x = property_type, y = price,color=property_type)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))+coord_cartesian(ylim = c(0, 2000))
 
-ggplot(data = cities_data, aes(x = room_type, y = price,color=room_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(data = cities_data, aes(x = room_type, y = price,color=room_type)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ggplot(data = cities_data, aes(x = accommodates, y = price,color=accommodates)) +geom_jitter(position=position_jitter(0.3),size=0.1) 
 
@@ -222,7 +222,7 @@ ggplot(data = cities_data, aes(x = bedrooms, y = price,color=bedrooms)) +geom_ji
 
 ggplot(data = cities_data, aes(x = beds, y = price,color=beds)) +geom_jitter(position=position_jitter(0.3),size=0.1)
 
-ggplot(data = cities_data, aes(x = bed_type, y = price,color=bed_type))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
+ggplot(data = cities_data, aes(x = bed_type, y = price,color=bed_type)) +geom_boxplot(outlier.shape = NA) +coord_cartesian(ylim = c(0, 400))
 
 ggplot(data = cities_data, aes(x = square_feet, y = price,color=square_feet)) +geom_point(size=0.1)
 
@@ -230,9 +230,9 @@ ggplot(data = cities_data, aes(x = minimum_nights, y = price,color=minimum_night
 
 ggplot(data = cities_data, aes(x = maximum_nights, y = price,color=maximum_nights)) +geom_point(size=0.1)
 
-ggplot(data = cities_data, aes(x = instant_bookable, y = price,color=instant_bookable))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1)
+ggplot(data = cities_data, aes(x = instant_bookable, y = price,color=instant_bookable)) +geom_boxplot(outlier.shape = NA) +coord_cartesian(ylim = c(0, 400))
 
-ggplot(data = cities_data, aes(x = cancellation_policy, y = price,color=cancellation_policy))+ geom_boxplot() +geom_jitter(position=position_jitter(0.3),size=0.1) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(data = cities_data, aes(x = cancellation_policy, y = price,color=cancellation_policy)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1)) +coord_cartesian(ylim = c(0, 3000))
 ```
 The plots show no correlations between the price and the majority of the parameters: the host response time, the host response rate, the host total listings count, the number of accommodates, the number of bathrooms, the number of bedrooms, the number of beds, the number of minimum and maximum nights (most of the listings don't have restrictions about these two parameters), whether the listing is instant bookable or not, and the cancellation policy (we can only see that the prices are slightly more expensive for the listings that have a strict cancellation policy).
 
