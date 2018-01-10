@@ -163,7 +163,7 @@ prices_per_state$state[prices_per_state$state == 'wa'] <- 'WA'
 prices_per_state$state[prices_per_state$state == 'il'] <- 'IL'
 prices_per_state$state[prices_per_state$state == 'Il'] <- 'IL'
 
-# Calculate the average price per city
+# Calculate the average price per state
 average_prices_per_state <- aggregate(cbind(prices_per_state$price),
                   by = list(state = prices_per_state$state),
                   FUN = function(x) mean(x))
@@ -194,25 +194,19 @@ nrow(mp_data)
 ```
 Indeed, we have only one record from each of these two states. Thus, the plot of average daily prices was misleading.
 
-
-## Different plots
-```{r, message=F, warning=F, cache=T}
-summary(cities_data)
-```
-
-## Price plots according to different parameters
+### Price plots according to different parameters
 ```{r, message=F, warning=F, cache=T}
 cities_data_without_null_host_response_time <-subset(cities_data,host_response_time != "N/A" & host_response_time != "")
-ggplot(data = cities_data_without_null_host_response_time, aes(x = host_response_time, y = price,color=host_response_time)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))+coord_cartesian(ylim = c(0, 500)) 
+ggplot(data = cities_data_without_null_host_response_time, aes(x = host_response_time, y = price,color=host_response_time)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))+coord_cartesian(ylim = c(0, 400))
 
 ggplot(data = cities_data, aes(x = host_response_rate, y = price, color=host_response_rate)) +geom_point(size=0.1)
 
 ggplot(data = cities_data, aes(x = host_total_listings_count, y = price, color=host_total_listings_count)) +geom_point(size=0.1) 
 
 cities_data_without_null_property_type <-subset(cities_data,property_type != "N/A" & property_type != "")
-ggplot(data = cities_data_without_null_property_type, aes(x = property_type, y = price,color=property_type)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))+coord_cartesian(ylim = c(0, 2000))
+ggplot(data = cities_data_without_null_property_type, aes(x = property_type, y = price,color=property_type)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1)) +coord_cartesian(ylim = c(0, 1700))
 
-ggplot(data = cities_data, aes(x = room_type, y = price,color=room_type)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(data = cities_data, aes(x = room_type, y = price,color=room_type)) +geom_boxplot(outlier.shape = NA) +theme(axis.text.x = element_text(angle = 90, hjust = 1)) +coord_cartesian(ylim = c(0, 500))
 
 ggplot(data = cities_data, aes(x = accommodates, y = price,color=accommodates)) +geom_jitter(position=position_jitter(0.3),size=0.1) 
 
@@ -298,73 +292,90 @@ To conclude, our linear model doesn't well explain the ratings.
 
 # Regression to explain the Price
 ```{r, message=F, warning=F, cache=T}
-# Candidates explanatory variables
-variables <- c("host_response_time","host_response_rate","host_acceptance_rate","host_total_listings_count","zipcode","property_type","room_type","accommodates","bathrooms","bedrooms","beds","bed_type","square_feet","price","security_deposit","cleaning_fee","extra_people","minimum_nights","maximum_nights","number_of_reviews","instant_bookable","cancellation_policy")
-
 # Clean the data
-my_data <- cities_data
-# my_data <- completeFun(cities_data, variables)
-my_data$state <- trim(my_data$state)
-my_data <- subset(my_data, my_data$state != '')
-my_data$state[my_data$state == 'New York'] <- 'NY'
-my_data$state[my_data$state == 'ny'] <- 'NY'
-my_data$state[my_data$state == 'Baja California'] <- 'CA'
-my_data$state[my_data$state == 'secc Terrazas'] <- 'CA'
-my_data$state[my_data$state == 'ca'] <- 'CA'
-my_data$state[my_data$state == 'Ca'] <- 'CA'
-my_data$state[my_data$state == 'wa'] <- 'WA'
-my_data$state[my_data$state == 'il'] <- 'IL'
-my_data$state[my_data$state == 'Il'] <- 'IL'
+price_data <- cities_data
+price_data$state <- trim(price_data$state)
+price_data <- subset(price_data, price_data$state != '')
+price_data$state[price_data$state == 'New York'] <- 'NY'
+price_data$state[price_data$state == 'ny'] <- 'NY'
+price_data$state[price_data$state == 'Baja California'] <- 'CA'
+price_data$state[price_data$state == 'secc Terrazas'] <- 'CA'
+price_data$state[price_data$state == 'ca'] <- 'CA'
+price_data$state[price_data$state == 'Ca'] <- 'CA'
+price_data$state[price_data$state == 'wa'] <- 'WA'
+price_data$state[price_data$state == 'il'] <- 'IL'
+price_data$state[price_data$state == 'Il'] <- 'IL'
 ```
 
 ### Trying to fit a linear model to explain the Price
 ```{r, message=F, warning=F, cache=T}
-p_reg1 <- lm(data=my_data, price~host_acceptance_rate+host_total_listings_count+zipcode+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy)
+# We split our data to a training set and a test set
+smp_size <- floor(0.9 * nrow(price_data))
+set.seed(357)
+train_ind <- sample(seq_len(nrow(price_data)), size = smp_size)
+train <- price_data[train_ind, ]
+test <- price_data[-train_ind, ]
+```
+
+```{r}
+# We try to fit a model with all the variables
+p_reg1 <- lm(data=train, price~host_response_rate+host_acceptance_rate+host_total_listings_count+zipcode+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+security_deposit+cleaning_fee+extra_people+minimum_nights+maximum_nights+number_of_reviews+instant_bookable+cancellation_policy+state)
 summary(p_reg1)
+```
+
+For this model, we have a very good value of the adjusted R-Squared (0.822), however, 129346 observations were deleted due to missingness, which leaves us only with 14608 observations.
+
+Let's try to fit another model without the explanatory variables that are missing from most of the observations.
+```{r}
+p_reg2 <- lm(data=train, price~zipcode+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+instant_bookable+cancellation_policy+state)
+summary(p_reg2)
 ```
 For this model, we have:
 
-- A very good value of the adjusted R-squared.
+- A good p-value.
 
-- A high value of the residual standard error.
+- But a very low value of the adjusted R-squared (0.257).
 
-- Large standard errors for the model's coefficients.
-
-
-Thus, this model is not good to explain the price. This was actually expected since, as we have seen previously, most of the explanatory variables we have here don't seem to have relations with the price, expect for 4 that can be possibly correlated for the price.
-
-Let's see about that.
-
-### Trying to fit a linear model with the most correlated variables
-```{r, message=F, warning=F, cache=T}
-p_reg2 <- lm(data=my_data, price~property_type+room_type+bed_type+cancellation_policy)
-summary(p_reg2)
+Let's try to see if we have some outliers that have a big impact on our coeffiecients.
+For that, we have to plot the Residuals versus Leverage plot.
+```{r}
+plot(p_reg2)
 ```
-The model can't be worse. The adjusted R-squared is less than 0.1, the residual standard error is very high, and the model's coefficents's standard errors are very high as well.
+We see that there are some observations outside the dashed red lines, let's try to inspect some of them.
 
-Our hypothesis doesn't stand then.
+```{r}
+train$rowid <- row.names(train)
+train[train$rowid == 114438,]$price
+train[train$rowid == 61737,]$price
+```
+We can conclude that listings with very high prices influence our model because they increase the variability of the price.
 
-Based on everyday's life, one can think that the price may be explained by the location, the square feet, and the number of bedrooms and bathrooms.
+```{r}
+nrow(train[train$price > 1000,])/nrow(train)  
+```
+From this we can see that listings with prices higher than 1000 dollars represent approximately 1% of our data.
 
-Let's try to check this.
+Let's try to fit a model after removing those listings.
 
-### Trying to fit a linear model with some candidate variables
-```{r, message=F, warning=F, cache=T}
-# Linear regression with other variables
-p_reg3 <- lm(data=my_data, price~zipcode+bedrooms+bathrooms+square_feet)
+```{r}
+price_sub_data <- price_data[price_data$price <= 1000,]
+smp_size <- floor(0.9 * nrow(price_sub_data))
+set.seed(357)
+train_ind <- sample(seq_len(nrow(price_sub_data)), size = smp_size)
+train_sub <- price_sub_data[train_ind, ]
+test_sub <- price_sub_data[-train_ind, ]
+
+p_reg3 <- lm(data=train_sub, price~zipcode+property_type+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+instant_bookable+cancellation_policy+state)
 summary(p_reg3)
 ```
-The Adjusted R-Squared is better than the previous model but is still very low, while the errors remain very high. 
+Our model is better than the previous one in terms of the adjusted R-squared (0.4386), but it's still not a good one.
 
-We can also see that 141937 of the observations were deleted due to some missing information (very few of the listings have the square feet information), this, most probably, has a bad impact on our results.
+In conclusion, there could be many reasons to explain these bad results, for example: 
 
-This model is not good then.
+- Our dataset is not big enough in terms of number of observations.
 
-We have tried many other linear models in order to explain the price, but all in vain. This may be because:
+- Our dataset can't be explained using a linear model.
 
-- There is no linear model to explain our data.
+- Our dataset lacks a lot of data that surely has an impact on the price, such as the surface.
 
-- Some information explaining the price could be missing (like the square feet for example).
-
-- There could be some linear models that explain specific ranges of the price but not all our data (for example, the price may depend on the number of bedrooms for small appartments but this number becomes irrelevant once we start speaking about villas).
-
+- Our study doesn't take into consideration seasonality: the prices may depend on time.
