@@ -8,6 +8,7 @@ output:
     fig_width: 5
     highlight: tango
 ---
+
 ## Loading and cleaning the datasets
 ```{r, message=F, warning=F, cache=T}
 library(plyr)
@@ -74,6 +75,69 @@ completeFun <- function(data, desiredCols) {
 
 # function: removing spaces
 trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+```
+
+### Number of listings per state
+```{r}
+library(ggplot2)
+library(maps)
+all_states <- map_data("state")
+all_states
+usa_data <- completeFun(cities_data, c("price","state"))
+usa_data$state <- trim(usa_data$state)
+usa_data <- subset(usa_data, usa_data$state != '')
+usa_data$state[usa_data$state == 'New York'] <- 'NY'
+usa_data$state[usa_data$state == 'ny'] <- 'NY'
+usa_data$state[usa_data$state == 'Baja California'] <- 'CA'
+usa_data$state[usa_data$state == 'secc Terrazas'] <- 'CA'
+usa_data$state[usa_data$state == 'ca'] <- 'CA'
+usa_data$state[usa_data$state == 'Ca'] <- 'CA'
+usa_data$state[usa_data$state == 'wa'] <- 'WA'
+usa_data$state[usa_data$state == 'il'] <- 'IL'
+usa_data$state[usa_data$state == 'Il'] <- 'IL'
+
+usa_data$state[usa_data$state == 'CA'] <- 'california'
+usa_data$state[usa_data$state == 'DC'] <- 'district of columbia'
+usa_data$state[usa_data$state == 'NY'] <- 'new york'
+usa_data$state[usa_data$state == 'TN'] <- 'tennessee'
+usa_data$state[usa_data$state == 'LA'] <- 'louisiana'
+usa_data$state[usa_data$state == 'NJ'] <- 'new jersey'
+usa_data$state[usa_data$state == 'VT'] <- 'vermont'
+usa_data$state[usa_data$state == 'WA'] <- 'washington'
+usa_data$state[usa_data$state == 'MD'] <- 'maryland'
+usa_data$state[usa_data$state == 'NC'] <- 'north carolina'
+usa_data$state[usa_data$state == 'OR'] <- 'oregon'
+usa_data$state[usa_data$state == 'TX'] <- 'texas'
+usa_data$state[usa_data$state == 'MA'] <- 'massachusetts'
+usa_data$state[usa_data$state == 'IL'] <- 'illinois'
+usa_data$state[usa_data$state == 'CO'] <- 'colorado'
+total <- aggregate(cbind(usa_data$id),
+                  by = list(state = usa_data$state),
+                  FUN = length)
+for (i in 17:49){
+  df <- data.frame(paste("state",i),0)
+  names(df) <- c("state","V1")
+  total <- rbind(df, total)
+}
+
+states_map <- map_data("state")
+
+cnames <- aggregate(cbind(long, lat) ~ region, data = states_map, 
+                    FUN=function(x) mean(range(x)))
+
+colnames(cnames)[1] <- "state"
+data <- merge(total, cnames, by = "state", all.x = TRUE)
+nrow(data)
+ggplot(total, aes(map_id = total$state)) +
+    geom_map(aes(fill = total$V1), map = states_map) +
+    scale_fill_continuous("Number of listings", low='coral', high='coral4', guide='colorbar') + 
+    expand_limits(x = states_map$long, y = states_map$lat) +
+    geom_text(data = data, aes(long, lat, label = data$state), size=2) +
+    labs(title = "Listings in the USA", x = "", y = "") +
+    theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank())
 ```
 
 ### Incomes
