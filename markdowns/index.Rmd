@@ -2,8 +2,12 @@
 title: "SMPE Project"
 author: "Insaf Boukrouh & Othmane Nahyl"
 date: "January 2017"
-output: 
-  html_document: 
+output:
+  pdf_document:
+    fig_height: 7
+    fig_width: 10
+    highlight: tango    
+  html_document:
     fig_height: 7
     fig_width: 10
     highlight: tango
@@ -204,6 +208,33 @@ pie
 
 Most of the listings are entire homes or apartments, while the shared rooms don't represent more than 3% of the entire listings.
 
+## Type of properties
+```{r, message=F, warning=F, cache=T}
+# Get the property types and their percentages
+whole_property_types_counts <- table(whole_data$property_type)
+property_types_counts <- table(whole_data$property_type,exclude=names(whole_property_types_counts[whole_property_types_counts[] < 4000]))
+count_of_others <- sum(as.vector(whole_property_types_counts[whole_property_types_counts[] < 4000]))
+property_types_counts['Others'] <- count_of_others
+property_types <- names(property_types_counts)
+counts <- as.vector(property_types_counts)
+percentages <- scales::percent(round(counts/sum(counts), 2))
+property_types_percentages <- sprintf("%s (%s)", property_types, percentages)
+property_types_counts_df <- data.frame(group = property_types, value = counts)
+
+# Plot
+pie <- ggplot(property_types_counts_df, aes(x = "", y = value, fill = property_types_percentages))+
+  geom_bar(width = 1, stat = "identity")+
+  coord_polar("y", start = 0)+
+  scale_fill_brewer("Property Types", palette="Dark2")+
+  ggtitle("Type of listings")+
+  ylab("")+
+  xlab("")+
+  theme(axis.ticks = element_blank(), panel.grid = element_blank(), axis.text = element_blank())+
+  geom_text(aes(label = percentages), size = 4, position = position_stack(vjust = 0.5))
+pie
+```
+
+
 ## Evolution of new hosts over time
 ```{r, message=F, warning=F, cache=T}
 # Clean
@@ -272,7 +303,7 @@ ggplot(data = whole_data, aes(x = beds, y = price,color=beds)) +geom_jitter(posi
 
 ggplot(data = whole_data, aes(x = bed_type, y = price,color=bed_type)) +geom_boxplot(outlier.shape = NA) +coord_cartesian(ylim = c(0, 400))
 
-ggplot(data = whole_data, aes(x = square_feet, y = price,color=square_feet)) +geom_point(size=0.1)
+ggplot(data = whole_data, aes(x = square_feet, y = price,color=square_feet)) +geom_point(size=0.1) +coord_cartesian(ylim = c(0, 7500))
 
 ggplot(data = whole_data, aes(x = minimum_nights, y = price,color=minimum_nights))  +geom_point(size=0.1)
 
