@@ -465,8 +465,6 @@ abline(a=0, b=1, col="blue")
 
 In conclusion, there could be many reasons to explain these bad results, for example: 
 
-- Our dataset is not big enough in terms of number of observations.
-
 - Our dataset can't be explained using a linear model.
 
 - Our dataset lacks a lot of data that surely has an impact on the price, such as the surface.
