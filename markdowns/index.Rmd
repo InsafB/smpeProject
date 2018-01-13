@@ -235,7 +235,7 @@ pie
 ```
 
 
-## Evolution of new hosts over time
+## Evolution of hosts over time
 ```{r, message=F, warning=F, cache=T}
 # Clean
 new_hosts_data <- removeRowsWithNA(whole_data, c("host_since"))
@@ -248,7 +248,9 @@ new_hosts_data$host_since <- format(as.Date(new_hosts_data$host_since, "%Y-%m-%d
 new_hosts_data_table <- table(new_hosts_data$host_since)
 
 # Plot
-plot(as.Date(paste(format(names(new_hosts_data_table), format="%Y-%m"),"-01", sep="")), as.vector(new_hosts_data_table), type = "l", xlab = "Time", ylab = "Number of new hosts")
+plot(as.Date(paste(format(names(new_hosts_data_table), format="%Y-%m"),"-01", sep="")), as.vector(new_hosts_data_table), type = "l", xlab = "Time", ylab = "Number of new hosts", col = "Blue")
+
+plot(as.Date(paste(format(names(new_hosts_data_table), format="%Y-%m"),"-01", sep="")), cumsum(as.vector(new_hosts_data_table)), type = "l", xlab = "Time", ylab = "Number of hosts", col = "Red")
 ```
 
 The number of new hosts was increasing since 2008. However, there was a decrease of this number in the last two years.
