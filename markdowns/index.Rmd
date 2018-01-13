@@ -182,6 +182,10 @@ ggplot(incomes_data, aes(x = income_per_month))+
 
 While a lot of people gain big amounts of money through Airbnb, most of them have an average income lower than 100 dollars per month.
 
+However, this plot corresponds to the minimum income and doesn't exactly reflect the reality. In fact, to calculate the incomes we made the following hypotheses:
+- The number of the reservations of every listing is the number of the reviews for that listing (statisically, the great majority - approximately 80% - of Airbnb guests leave reviews for the hosts).
+- Every listing was reserved for a number of days that corresponds to the minimum booking duration.
+
 ## Type of listings
 ```{r, message=F, warning=F, cache=T}
 # Get the room types and their percentages
