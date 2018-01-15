@@ -253,8 +253,6 @@ new_hosts_data_table <- table(new_hosts_data$host_since)
 
 # Plot
 plot(as.Date(paste(format(names(new_hosts_data_table), format="%Y-%m"),"-01", sep="")), as.vector(new_hosts_data_table), type = "l", xlab = "Time", ylab = "Number of new hosts", col = "Blue")
-
-plot(as.Date(paste(format(names(new_hosts_data_table), format="%Y-%m"),"-01", sep="")), cumsum(as.vector(new_hosts_data_table)), type = "l", xlab = "Time", ylab = "Number of hosts", col = "Red")
 ```
 
 The number of new hosts was increasing since 2008. However, there was a decrease of this number in the last two years.
