@@ -3,15 +3,12 @@ title: "SMPE Project"
 author: "Insaf Boukrouh & Othmane Nahyl"
 date: "January 2017"
 output:
-  pdf_document:
-    fig_height: 7
-    fig_width: 10
-    highlight: tango    
   html_document:
     fig_height: 7
     fig_width: 10
     highlight: tango
 ---
+
 
 Airbnb is a quickly evolving marketplace that allows people to list, discover, and book unique accommodations around the world.
 
@@ -122,7 +119,7 @@ usa_data$state[usa_data$state == 'CO'] <- 'colorado'
 # Get the number of listings per state
 number_of_listings_by_state <- aggregate(cbind(usa_data$id), by = list(state = usa_data$state), FUN = length)
 
-# Fill missing rows with dummy states avoid some ggplot errors
+# Fill missing rows with dummy states in order to avoid some ggplot errors
 for (i in 17:49){
   df <- data.frame(paste("state",i),0)
   names(df) <- c("state","V1")
@@ -149,10 +146,12 @@ ggplot(number_of_listings_by_state, aes(map_id = number_of_listings_by_state$sta
 ```
 
 From the plot, we can see that we only have data for some states (to be exact, 14 out of 50).
+
 We can see that California and New York have the highest number of listings. 
+
 Thus, any conclusion that we make through this study can't be generalized over the whole country.
 
-## Incomes
+## How much money do people make from Airbnb listings ?
 ```{r, message=F, warning=F, cache=T}
 # Clean
 incomes_data <- removeRowsWithNA(whole_data, c("price", "minimum_nights", "number_of_reviews", "host_since", "calendar_last_scraped"))
@@ -182,11 +181,14 @@ ggplot(incomes_data, aes(x = income_per_month))+
 
 While a lot of people gain big amounts of money through Airbnb, most of them have an average income lower than 100 dollars per month.
 
+
 However, this plot corresponds to the minimum income and doesn't exactly reflect the reality. In fact, to calculate the incomes we made the following hypotheses:
+
 - The number of the reservations of every listing is the number of the reviews for that listing (statisically, the great majority - approximately 80% - of Airbnb guests leave reviews for the hosts).
+
 - Every listing was reserved for a number of days that corresponds to the minimum booking duration.
 
-## Type of listings
+## Type of listings (with regard to the room type)
 ```{r, message=F, warning=F, cache=T}
 # Get the room types and their percentages
 room_types_counts <- table(whole_data$room_type)
@@ -212,7 +214,7 @@ pie
 
 Most of the listings are entire homes or apartments, while the shared rooms don't represent more than 3% of the entire listings.
 
-## Type of properties
+## Type of listings (with regard to the property type)
 ```{r, message=F, warning=F, cache=T}
 # Get the property types and their percentages
 whole_property_types_counts <- table(whole_data$property_type)
@@ -238,8 +240,9 @@ pie <- ggplot(property_types_counts_df, aes(x = "", y = value, fill = property_t
 pie
 ```
 
+Most of the listings are simple apartments, 32% are houses, while the rest includes different types of properties (villas, boats, tree houses, etc).
 
-## Evolution of hosts over time
+## Airbnb growth: evolution of new hosts over time
 ```{r, message=F, warning=F, cache=T}
 # Clean
 new_hosts_data <- removeRowsWithNA(whole_data, c("host_since"))
@@ -274,7 +277,7 @@ ggplot(data = average_prices_per_state, aes(x = average_prices_per_state$state, 
     theme_minimal()
 ```
 
-The average daily price of listings in the state of Texas is the highest (292.81 dollars), while it's the lowest in New Jersey (97.5 dollars). However, we can't conclude anything from the plot since the average prices alone aren't representative of the whole prices in every state.
+The average daily price of the listings in the state of Texas is the highest (292.81 dollars), while it's the lowest in New Jersey (97.5 dollars). However, we can't conclude anything from the plot since the average prices alone aren't representative of the whole prices in every state.
 
 To make a conclusion, we have to analyze the variability of the prices.
 ```{r, message=F, warning=F, cache=T}
@@ -354,7 +357,6 @@ From the plots, we can see that most of the people who give the listings high ra
 # Regression to explain the Ratings
 Now that we have taken a look at our data, one question arises: What factors do users take into consideration to globally rate a listing ?
 
-## Trying to fit a linear model to explain the Ratings
 ```{r, message=F, warning=F, cache=T}
 # Linear model with all variables
 r_reg <- lm(data=whole_data, review_scores_rating~review_scores_accuracy+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value)
@@ -368,7 +370,7 @@ Our model has:
 
 - All the predictors are significant.
 
-However, this is not enough to say that our linear model is good. To make sure of that, let's check whether the linear regression hypothesis hold or not.
+However, this is not enough to say that our linear model is good. To make sure of that, let's check whether the linear regression hypotheses hold or not.
 ```{r, message=F, warning=F, cache=T}
 plot(r_reg)
 ```
@@ -388,7 +390,6 @@ To conclude, our linear model doesn't well explain the ratings.
 
 Another important question that arises is: Knowing the listing's attributes, can we predict its price ?
 
-## Trying to fit a linear model to explain the Price
 ```{r, message=F, warning=F, cache=T}
 # We split our data to a training set and a test set
 smp_size <- floor(0.9 * nrow(whole_data))
@@ -453,7 +454,8 @@ summary(p_reg3)
 
 Our model is better than the previous one in terms of the adjusted R-squared (0.4379), but it's still not a good one.
 
-The following graph is a plot with x-axis as the actual prices and y-axis as the predicted ones 
+The following graph is a plot with x-axis as the actual prices and y-axis as the predicted ones.
+
 Ideally, all the points should be close to a diagonal line, which is obviously not the case here.
 ```{r}
 predictions <- predict(p_reg3, test_sub)
